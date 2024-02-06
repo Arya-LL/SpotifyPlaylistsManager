@@ -1,0 +1,30 @@
+[package]
+name = "SpotifyPlaylists"
+version = "0.1.0"
+edition = "2021"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rspotify = { version = "0.12.0", features = ["env-file", "cli"] }
+serde = "1.0.193"
+dotenvy = "0.15.7"
+tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros"] }
+futures = "0.3.30"
+futures-util = "0.3.30"
+burn = { version = "0.11.1", features = [
+  "train",
+  "tui",
+  "metrics",
+  "cuda",
+  "wgpu",
+] }
+dateparser = "0.2.1"
+rand = "0.8.5"
+tokenizers = { version = "0.15.0", features = ["http"] }
+surrealdb = { version = "1.0.2", features = ["kv-rocksdb"] }
+wasm-bindgen = { version = "0.2.90" }
+chrono = "0.4.32"
+derive-new = "0.6.0"
+anyhow = "1.0.79"

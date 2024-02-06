@@ -1,0 +1,2 @@
+# SpotifyPlaylists
+Spotify Goofy Playlists
