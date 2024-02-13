@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use core::panic;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
@@ -8,17 +7,11 @@ use anyhow::{Context, Result};
 use futures_util::StreamExt;
 use rspotify::clients::{BaseClient, OAuthClient};
 use rspotify::model::{FullTrack, PlayableItem, PlaylistItem, SavedTrack};
-=======
-use rspotify::model::SavedTrack;
-
-use rspotify::ClientError;
->>>>>>> 883ab2ed435b9d1a12be330d6be7c71becc78f26
 
 use rspotify::model::SimplifiedPlaylist;
 
 use rspotify::{self, ClientResult};
 
-<<<<<<< HEAD
 use crate::data_structs as data;
 
 pub async fn get_motherlist(
@@ -55,17 +48,21 @@ pub async fn get_user_acct() -> Result<rspotify::AuthCodeSpotify> {
             }
         }
     }
-async fn run() {
-    let market = rspotify::model::Market::Country(rspotify::model::Country::UnitedStates);
-    let spotify = account::get_user_acct().await;
-    let motherlist_id = account::get_parent_playlist_id(&spotify).await;
-    let motherlist = account::get_parent_playlist_tracks(&spotify, motherlist_id, market).await;
-    let mutual = true;
-    let labels = get_labels(&motherlist);
-}
 
-pub(crate) async fn get_user_acct() -> rspotify::AuthCodeSpotify {
-    let creds = rspotify::Credentials::from_env().unwrap();
+    let creds = match rspotify::Credentials::from_env() {
+        Some(x) => x,
+        None => panic!("Unable to get credentials with given client ID and secret in env file"),
+    };
+
+    let oauth = match rspotify::OAuth::from_env(rspotify::scopes!(
+        "playlist-modify-private,playlist-read-private,user-library-read"
+    )) {
+        Some(x) => x,
+        None => panic!("Unable to get account with given client ID and secret in env file"),
+    };
+
+    let spotify = rspotify::AuthCodeSpotify::new(creds, oauth);
+
     let url = spotify.get_authorize_url(false).context(
         "Failed to get authorization url
 Fai",
@@ -115,38 +112,25 @@ fn create_env_credentials() -> Result<()> {
         .context("Error in writing to .env")?;
 
     Ok(())
-=======
-    let url = spotify.get_authorize_url(false).unwrap();
-
-    spotify.prompt_for_token(&url).await.unwrap();
-
-    spotify
->>>>>>> 883ab2ed435b9d1a12be330d6be7c71becc78f26
 }
 
 //TODO: Figure out how to anyhow these ClientResults
 async fn get_parent_playlist_id(
     spotify: &rspotify::AuthCodeSpotify,
-<<<<<<< HEAD
 ) -> Result<Option<SimplifiedPlaylist>> {
     let playlists_result: Vec<ClientResult<SimplifiedPlaylist>> = spotify
-=======
-) -> Option<Result<SimplifiedPlaylist, ClientError>> {
-    let playlists = spotify
->>>>>>> 883ab2ed435b9d1a12be330d6be7c71becc78f26
         .current_user_playlists()
-        .collect::<Vec<Result<SimplifiedPlaylist, ClientError>>>()
+        .collect::<Vec<ClientResult<SimplifiedPlaylist>>>()
         .await;
+    let playlists: Vec<SimplifiedPlaylist> = playlists_result
+        .into_iter()
+        .collect::<ClientResult<Vec<SimplifiedPlaylist>>>()?;
+
     println!("Available playlists associated with account:");
     let mut i = 0;
     for x in playlists.iter() {
         i += 1;
-        println!(
-            "{i} {:?}",
-            x.as_ref()
-                .expect("Should be able to get playlists from user")
-                .name
-        );
+        println!("{i} {:?}", x.name);
     }
     i += 1;
     println!("{i} Liked Songs");
@@ -157,10 +141,14 @@ async fn get_parent_playlist_id(
 
     loop {
         let mut playlists_index_temp = String::new();
-        std::io::stdin()
-            .read_line(&mut playlists_index_temp)
-            .expect("Invalid input for motherlist index");
-        playlist_index = playlists_index_temp.trim().parse().unwrap_or(-1);
+        std::io::stdin().read_line(&mut playlists_index_temp)?;
+        match playlists_index_temp.trim().parse() {
+            Ok(x) => playlist_index = x,
+            Err(_) => {
+                println!("Could not parse your input, please enter a number.");
+                continue;
+            }
+        };
 
         if playlist_index < 0
             || std::convert::TryInto::<usize>::try_into(playlist_index)
@@ -177,29 +165,21 @@ async fn get_parent_playlist_id(
         .try_into()
         .expect("playlist_index really shouldn't bhe greater than max of usize");
 
-    playlists.into_iter().nth(playlist_index - 1)
+    Ok(playlists.into_iter().nth(playlist_index - 1))
 }
 
 async fn get_parent_playlist_tracks(
     spotify: &rspotify::AuthCodeSpotify,
-    playlist_id: Option<Result<SimplifiedPlaylist, ClientError>>,
+    playlist_id: Option<SimplifiedPlaylist>,
     market: rspotify::model::Market,
-<<<<<<< HEAD
 ) -> Result<Vec<data::BetterSavedTrack>> {
-=======
-) -> Vec<rspotify::model::FullTrack> {
->>>>>>> 883ab2ed435b9d1a12be330d6be7c71becc78f26
     let (is_liked_songs, playlist_id) = match playlist_id {
-        Some(x) => (
-            false,
-            Some(x.expect("Should be able to get playlist with given id").id),
-        ),
+        Some(x) => (false, Some(x.id)),
         None => (true, None),
     };
 
     if is_liked_songs {
         let playlist = spotify.current_user_saved_tracks(Some(market));
-<<<<<<< HEAD
         let playlist = playlist.collect::<Vec<ClientResult<SavedTrack>>>().await;
         let playlist: Vec<SavedTrack> = playlist
             .into_iter()
@@ -236,28 +216,6 @@ async fn get_parent_playlist_tracks(
             }
             data::BetterSavedTrack { added_at, track }
         }).collect())
-=======
-        let playlist = playlist
-            .collect::<Vec<Result<SavedTrack, ClientError>>>()
-            .await;
-        playlist
-            .into_iter()
-            .map(|x| {
-                x.expect("Should be able to get songs from liked songs")
-                    .track
-            })
-            .collect()
-    } else {
-        let playlist = spotify.playlist_items(playlist_id.unwrap(), None, Some(market));
-        playlist
-            .map(|x| async move {
-                let binding = x.unwrap().track.unwrap();
-                let track_id = binding.id().unwrap().try_into().unwrap();
-                spotify.track(track_id, Some(market)).await.unwrap()
-            })
-            .buffer_unordered(100)
-            .collect::<Vec<_>>()
-            .await
->>>>>>> 883ab2ed435b9d1a12be330d6be7c71becc78f26
     }
 }
+
