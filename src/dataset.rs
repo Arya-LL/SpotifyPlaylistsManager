@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
-use burn::data::dataset::{Dataset, SqliteDatasetError, SqliteDatasetStorage};
+use burn::data::dataset::{Dataset, SqliteDataset, SqliteDatasetError, SqliteDatasetStorage};
 use derive_new::new;
 
 use anyhow::{Context, Result};
@@ -48,7 +48,50 @@ pub struct TrackClassificationItem {
     pub label: usize,                      // The label of the text (classification category)
 }
 
-pub trait TrackClassificationDataset: Dataset<TrackClassificationItem> {
-    fn number_of_classes(&self) -> usize;
-    fn class_name(&self, class_id: usize) -> String;
+pub trait TrackClassificationDatasetTrait: Dataset<TrackClassificationItem> {
+    fn number_of_classes(&self, map: HashMap<usize, String>) -> usize;
+    fn class_name(&self, label: usize, map: HashMap<usize, String>) -> String;
+}
+
+pub struct TrackClassificationDatasetStruct {
+    dataset: SqliteDataset<TrackClassificationItem>,
+}
+
+impl Dataset<TrackClassificationItem> for TrackClassificationDatasetStruct {
+    fn get(&self, index: usize) -> Option<TrackClassificationItem> {
+        self.dataset.get(index)
+    }
+
+    fn len(&self) -> usize {
+        self.dataset.len()
+    }
+}
+
+impl TrackClassificationDatasetStruct {
+    pub fn train() -> Self {
+        Self::new("train")
+    }
+
+    pub fn test() -> Self {
+        Self::new("test")
+    }
+
+    pub fn new(split: &str) -> Self {
+        Self {
+            dataset: SqliteDataset::from_db_file("data/track_classification.db", split).unwrap(),
+        }
+    }
+}
+
+impl TrackClassificationDatasetTrait for TrackClassificationDatasetStruct {
+    fn number_of_classes(&self, map: HashMap<usize, String>) -> usize {
+        map.len()
+    }
+
+    fn class_name(&self, label: usize, map: HashMap<usize, String>) -> String {
+        match map.get(&label) {
+            Some(x) => x.to_string(),
+            None => panic!("Invalid class id"),
+        }
+    }
 }

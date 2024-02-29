@@ -32,6 +32,8 @@ async fn main() -> Result<()> {
         .iter()
         .enumerate()
         .for_each(|(i, x)| println!("{i} {:?}", x.track_name));
+
+    println!("{:?}", motherlist[0]);
     Ok(())
 }
 

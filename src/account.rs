@@ -37,6 +37,7 @@ pub async fn get_user_acct() -> Result<rspotify::AuthCodeSpotify> {
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input).context("Failed to read line for choosing to create new account details file")?;
                 input = input.trim().to_lowercase();
+                println!("Input was: {}", input);
                 if &input[..] == "y" {
                     create_env_credentials().context("Failed to create env file")?;
                     break;
@@ -45,6 +46,7 @@ pub async fn get_user_acct() -> Result<rspotify::AuthCodeSpotify> {
                     println!("Please input either \'y\' or \'n\'.");
                     continue;
                 }
+                break;
             }
         }
     }
@@ -79,7 +81,7 @@ Fai",
 fn create_env_credentials() -> Result<()> {
     let mut client_id = "RSPOTIFY_CLIENT_ID=".to_string();
     let mut client_secret = "RSPOTIFY_CLIENT_SECRET=".to_string();
-    let mut redirect_url = "=".to_string();
+    let mut redirect_url = String::new();
     // let mut redirect_url_temp = String::new();
 
     println!("Please paste your spotify developer app client id here:");
@@ -96,10 +98,11 @@ fn create_env_credentials() -> Result<()> {
     std::io::stdin()
         .read_line(&mut redirect_url)
         .context("Error in reading redirect url")?;
-    if redirect_url.trim().is_empty() {
+    println!("{redirect_url}");
+    if redirect_url.len() == 1 {
         redirect_url.push_str("RSPOTIFY_REDIRECT_URI=http://localhost:8888/callback");
     } else {
-        redirect_url = "RSPOTIFY_REDIRECT_URI={redirect_url.trim()}".to_string();
+        redirect_url = "RSPOTIFY_REDIRECT_URI=".to_owned() + &redirect_url;
     }
 
     let file = OpenOptions::new()
@@ -218,4 +221,3 @@ async fn get_parent_playlist_tracks(
         }).collect())
     }
 }
-
